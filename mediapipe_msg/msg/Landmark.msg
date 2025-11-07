@@ -4,3 +4,6 @@ float64 y
 float64 z
 float64 visibility
 float64 presence
+int32 pixel_x
+int32 pixel_y
+bool is_pixel_valid
