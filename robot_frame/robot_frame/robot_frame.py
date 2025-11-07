@@ -48,8 +48,8 @@ class RobotFrameTransform(Node):
         for landmark in msg.pose.landmarks:
             if not landmark.is_pixel_valid:
                 continue
-            angle_from_center = np.arctan2((landmark.pixel_x - cx), fx)
-            angle_rads.append(angle_from_center)
+            angle_from_center_rad = np.arctan2((landmark.pixel_x - cx), fx)
+            angle_rads.append(angle_from_center_rad)
         angle_rads = np.array(angle_rads)
         # positve clockwise
         print(f"Mean: {np.mean(angle_rads)}")
