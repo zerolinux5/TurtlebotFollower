@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+import tf2_ros
 
 from mediapipe_msg.msg import PoseStamped
 from sensor_msgs.msg import LaserScan, CameraInfo
@@ -34,6 +35,8 @@ class RobotFrameTransform(Node):
         self.lidar_subscription
         self.lidar_scan = None
         self.camera_info = None
+        self.tfBuffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
 
     def pose_processor(self, msg):
         # no lidar nothing to do
@@ -45,11 +48,17 @@ class RobotFrameTransform(Node):
         for landmark in msg.pose.landmarks:
             if not landmark.is_pixel_valid:
                 continue
-            angle_from_center = ((landmark.pixel_x - cx) / fx)
+            angle_from_center = np.arctan2((landmark.pixel_x - cx), fx)
             angle_rads.append(angle_from_center)
         angle_rads = np.array(angle_rads)
+        # positve clockwise
         print(f"Mean: {np.mean(angle_rads)}")
         print("-----")
+        # tf2_kdl pykdl
+        # transform_stamped = self.tf_buffer.lookup_transform("base_link", msg.header.frame_id, msg.header.stamp);
+        # Will want to multiply rotation matrix with my angle to get angle in correct frame of reference
+        # For now assume same angle
+
 
 
     def lidar_processor(self, msg):
