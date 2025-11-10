@@ -125,6 +125,8 @@ class MediaPipe(Node):
                     image, pose_landmarks_proto, mp_pose.POSE_CONNECTIONS)
 
             debug_image = self.bridge.cv2_to_imgmsg(image, "rgb8")
+            debug_image.header.stamp = self.get_clock().now().to_msg()
+            debug_image.header.frame_id = "camera_rgb_frame"
             self.debug_publisher.publish(debug_image)
         for human in results.pose_landmarks:
             new_pose = PoseStamped()
