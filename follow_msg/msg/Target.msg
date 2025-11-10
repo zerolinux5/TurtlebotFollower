@@ -1,0 +1,4 @@
+std_msgs/Header header
+
+float64 angle_from_center_rad
+float64 depth_m

@@ -5,6 +5,7 @@ from cv_bridge import CvBridge, CvBridgeError
 import tf2_ros
 from rclpy.time import Time
 
+from follow_msg.msg import Target
 from mediapipe_msg.msg import PoseStamped
 from sensor_msgs.msg import LaserScan, CameraInfo, Image
 
@@ -43,6 +44,8 @@ class RobotFrameTransform(Node):
             '/scan',
             self.lidar_processor,
             10)
+            
+        self.target_publisher = self.create_publisher(Target, '/follow/target', 10)
         
         self.pose_subscription
         self.camera_info_subscription
@@ -116,14 +119,22 @@ class RobotFrameTransform(Node):
             name_to_depth[name] = p_base[2]
             # name_to_depth[name] = depth_point
         angle_rads = np.array(angle_rads)
+        mean_angle_rad = np.mean(angle_rads)
         # positve clockwise
-        print(f"Mean angle: {np.mean(angle_rads)}")
+        print(f"Mean angle: {mean_angle_rad}")
         depth_m = np.array(list(name_to_depth.values()))
-        print(f"Mean depth: {np.mean(depth_m)}")
+        mean_depth_m = np.mean(depth_m)
+        print(f"Mean depth: {mean_depth_m}")
         print("\n")
         for name, value in sorted(name_to_depth.items(), key=lambda item: item[1]):
             print(f"{name} is at {value}m")
         print("-----")
+        new_target = Target()
+        new_target.header.stamp = self.get_clock().now().to_msg()
+        new_target.header.frame_id = "base_link"
+        new_target.angle_from_center_rad = mean_angle_rad
+        new_target.depth_m = mean_depth_m
+        self.target_publisher.publish(new_target)
         # tf2_kdl pykdl
         # transform_stamped = self.tf_buffer.lookup_transform("base_link", msg.header.frame_id, msg.header.stamp);
         # Will want to multiply rotation matrix with my angle to get angle in correct frame of reference
