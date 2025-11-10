@@ -129,12 +129,12 @@ class MediaPipe(Node):
         for human in results.pose_landmarks:
             new_pose = PoseStamped()
             new_pose.header.stamp = self.get_clock().now().to_msg()
-            new_pose.header.frame_id = "camera_link"
+            new_pose.header.frame_id = "camera_rgb_frame"
             for idx, landmark in enumerate(human):
                 new_landmark = Landmark()
                 new_landmark.name = LandMarkEnum(idx).name
                 im_rows, im_cols = mp_image.height, mp_image.width
-                pix_xy = self._normalized_to_pixel_coordinates(landmark.x, landmark.y, im_rows, im_cols)
+                pix_xy = self._normalized_to_pixel_coordinates(landmark.x, landmark.y, im_cols, im_rows)
                 pixel_x = None
                 pixel_y = None
                 if pix_xy is not None:
