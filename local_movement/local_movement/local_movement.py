@@ -38,7 +38,7 @@ class LocalMovement(Node):
         tolerance_angle_rad = 0.01
 
         new_move_command = Twist()
-        new_move_command.linear.x = 0. if depth_m < tolerance_depth_m else depth_m * 0.025
+        new_move_command.linear.x = 0. if depth_m < tolerance_depth_m else depth_m * 0.05
         new_move_command.angular.z = 0. if abs(angle_from_center_rad) < tolerance_angle_rad else -angle_from_center_rad * 0.9
         self.move_command_publisher.publish(new_move_command)
 
