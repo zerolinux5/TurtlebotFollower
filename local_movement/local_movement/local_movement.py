@@ -31,8 +31,6 @@ class LocalMovement(Node):
         depth_m = msg.depth_m
         print(f"Angle: {angle_from_center_rad}")
         print(f"Depth: {depth_m}")
-        if np.isnan(depth_m):
-            return
         self.last_msg_time = time.time()
         tolerance_depth_m = 0.9
         tolerance_angle_rad = 0.01

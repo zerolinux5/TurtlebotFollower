@@ -129,6 +129,8 @@ class RobotFrameTransform(Node):
         for name, value in sorted(name_to_depth.items(), key=lambda item: item[1]):
             print(f"{name} is at {value}m")
         print("-----")
+        if np.isnan(mean_angle_rad) or np.isnan(mean_depth_m):
+            return
         new_target = Target()
         new_target.header.stamp = self.get_clock().now().to_msg()
         new_target.header.frame_id = "base_link"
