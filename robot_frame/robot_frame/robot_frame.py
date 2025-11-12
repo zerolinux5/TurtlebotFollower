@@ -5,11 +5,13 @@ from cv_bridge import CvBridge, CvBridgeError
 import tf2_ros
 from rclpy.time import Time
 
+from visualization_msgs.msg import Marker, MarkerArray
 from follow_msg.msg import Target
 from mediapipe_msg.msg import PoseStamped
 from sensor_msgs.msg import LaserScan, CameraInfo, Image
 
 import numpy as np
+import math
 
 
 class RobotFrameTransform(Node):
@@ -46,6 +48,8 @@ class RobotFrameTransform(Node):
             10)
             
         self.target_publisher = self.create_publisher(Target, '/follow/target', 10)
+        self.debug_marker = self.create_publisher(MarkerArray, '/debug/markers', 10)
+        self.debug_angle_marker = self.create_publisher(Marker, '/debug/angle_arrow', 10)
         
         self.pose_subscription
         self.camera_info_subscription
@@ -57,6 +61,44 @@ class RobotFrameTransform(Node):
         self.bridge = CvBridge()
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
+
+    def display_arrow_from_angle(self, angle):
+        half = angle / 2.0
+        marker = Marker()
+        marker.header.frame_id = "camera_link"
+        marker.header.stamp = self.get_clock().now().to_msg()
+        marker.ns = "points"
+        marker.id = 100
+        marker.type = Marker.ARROW
+        marker.action = Marker.ADD
+        marker.pose.orientation.z = math.sin(half)
+        marker.pose.orientation.w = math.sin(half)
+        marker.scale.x = 0.5
+        marker.scale.y = 0.05
+        marker.scale.z = 0.05
+        marker.color.a = 1.0
+        marker.color.r = 1.0
+        marker.color.b = 1.0
+        return marker
+
+
+    def display_marker_from_3d_point(self, point, idx):
+        marker = Marker()
+        marker.header.frame_id = "base_link"
+        marker.header.stamp = self.get_clock().now().to_msg()
+        marker.ns = "points"
+        marker.id = idx
+        marker.type = Marker.SPHERE
+        marker.action = Marker.ADD
+        marker.pose.position.x = point[0]
+        marker.pose.position.y = point[1]
+        marker.pose.position.z = point[2]
+        marker.scale.x = 0.05
+        marker.scale.y = 0.05
+        marker.scale.z = 0.05
+        marker.color.a = 1.0
+        marker.color.r = 1.0
+        return marker
 
     def pose_processor(self, msg):
         # no lidar nothing to do
@@ -97,7 +139,8 @@ class RobotFrameTransform(Node):
         tolerance_y = 25
         depth_tolerance = 1e-3
         height, width = depth_image.shape
-        for landmark in msg.pose.landmarks:
+        marker_array = MarkerArray()
+        for idx, landmark in enumerate(msg.pose.landmarks):
             if not landmark.is_pixel_valid:
                 continue
             # take out edges
@@ -110,16 +153,19 @@ class RobotFrameTransform(Node):
             name = landmark.name
             # Assume same?
             depth_point = depth_image[landmark.pixel_y][landmark.pixel_x] / 1000.
-            if depth_point < depth_tolerance:
+            if depth_point < depth_tolerance or np.isnan(depth_point):
                 continue
             real_x = (landmark.pixel_x - cx) * depth_point / fx
             real_y = (landmark.pixel_y - cy) * depth_point / fy
             p_cam = np.array([real_x, real_y, depth_point])
             p_base = R @ p_cam + T
-            name_to_depth[name] = p_base[2]
-            # name_to_depth[name] = depth_point
+            name_to_depth[name] = depth_point
+            marker = self.display_marker_from_3d_point(p_base, idx)
+            marker_array.markers.append(marker)
+        self.debug_marker.publish(marker_array)
         angle_rads = np.array(angle_rads)
         mean_angle_rad = np.mean(angle_rads)
+        self.debug_angle_marker.publish(self.display_arrow_from_angle(mean_angle_rad))
         # positve clockwise
         print(f"Mean angle: {mean_angle_rad}")
         depth_m = np.array(list(name_to_depth.values()))
