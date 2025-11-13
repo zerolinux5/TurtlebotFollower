@@ -41,11 +41,13 @@ class GestureRecognizer(Node):
         for landmark in msg.pose.landmarks:
             landmarks.extend(self.landmark_to_float(landmark))
         landmarks = np.array(landmarks, dtype=np.float32)
-        print(landmarks.shape)
         input_landmarks = np.expand_dims(landmarks, 0)
         outputs = self.ort_session.run(None, {"input": input_landmarks})
         logits = outputs[0]
         pred_class = IDX_TO_CLASS_MAPPING[int(np.argmax(logits, axis=1)[0])]
+        msg_as_str = String()
+        msg_as_str.data = pred_class
+        self.gesture_publisher.publish(msg_as_str)
         print(f"Predicted class: ", pred_class)
 
 def main(args=None):
