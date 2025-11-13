@@ -83,6 +83,7 @@ class MediaPipe(Node):
         self.bridge = CvBridge()
         self.debug_publisher = self.create_publisher(Image, '/landmark/debug_image', 10)
         self.landmark_publisher = self.create_publisher(PoseStamped, '/landmark/normalized_pose', 10)
+        self.landmarker = PoseLandmarker.create_from_options(options)
 
     # From mediapipe drawing_utils
     def _normalized_to_pixel_coordinates(
@@ -112,22 +113,21 @@ class MediaPipe(Node):
             return
         # cv_image = cv2.cvtColor(cv2.flip(image, 1), cv2.COLOR_BGR2RGB)
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
-        with PoseLandmarker.create_from_options(options) as landmarker:
-            results = landmarker.detect(mp_image)
-            pose_landmarks_list = results.pose_landmarks
-            for idx in range(len(pose_landmarks_list)):
-                pose_landmarks = pose_landmarks_list[idx]
-                pose_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
-                normalized_data = [landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in pose_landmarks]
+        results = self.landmarker.detect(mp_image)
+        pose_landmarks_list = results.pose_landmarks
+        for idx in range(len(pose_landmarks_list)):
+            pose_landmarks = pose_landmarks_list[idx]
+            pose_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+            normalized_data = [landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in pose_landmarks]
 
-                pose_landmarks_proto.landmark.extend(normalized_data)
-                mp_drawing.draw_landmarks(
-                    image, pose_landmarks_proto, mp_pose.POSE_CONNECTIONS)
+            pose_landmarks_proto.landmark.extend(normalized_data)
+            mp_drawing.draw_landmarks(
+                image, pose_landmarks_proto, mp_pose.POSE_CONNECTIONS)
 
-            debug_image = self.bridge.cv2_to_imgmsg(image, "rgb8")
-            debug_image.header.stamp = self.get_clock().now().to_msg()
-            debug_image.header.frame_id = "camera_rgb_frame"
-            self.debug_publisher.publish(debug_image)
+        debug_image = self.bridge.cv2_to_imgmsg(image, "rgb8")
+        debug_image.header.stamp = self.get_clock().now().to_msg()
+        debug_image.header.frame_id = "camera_rgb_frame"
+        self.debug_publisher.publish(debug_image)
         for human in results.pose_landmarks:
             new_pose = PoseStamped()
             new_pose.header.stamp = self.get_clock().now().to_msg()

@@ -7,7 +7,8 @@ def generate_launch_description():
     ld = LaunchDescription([
         launch_ros.actions.Node(
             package='mediapipe_p', executable='mediapipe', name='mediapipe',
-            remappings=[]),
+            remappings=[],
+            output='log'),
         launch_ros.actions.Node(
             package='robot_frame', executable='robot_frame_transform', name='robot_frame_transform',
             remappings=[],
