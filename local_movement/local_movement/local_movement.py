@@ -29,8 +29,8 @@ class LocalMovement(Node):
     def process_target(self, msg):
         angle_from_center_rad = msg.angle_from_center_rad
         depth_m = msg.depth_m
-        print(f"Angle: {angle_from_center_rad}")
-        print(f"Depth: {depth_m}")
+        # print(f"Angle: {angle_from_center_rad}")
+        # print(f"Depth: {depth_m}")
         self.last_msg_time = time.time()
         tolerance_depth_m = 0.9
         tolerance_angle_rad = 0.01

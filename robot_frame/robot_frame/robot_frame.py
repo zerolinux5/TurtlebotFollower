@@ -134,7 +134,7 @@ class RobotFrameTransform(Node):
         ])
         translation = t.transform.translation
         T = np.array([translation.x, translation.y, translation.z])
-        print(depth_image.shape)
+        # print(depth_image.shape)
         tolerance_x = 25
         tolerance_y = 25
         depth_tolerance = 1e-3
@@ -167,14 +167,14 @@ class RobotFrameTransform(Node):
         mean_angle_rad = np.mean(angle_rads)
         self.debug_angle_marker.publish(self.display_arrow_from_angle(mean_angle_rad))
         # positve clockwise
-        print(f"Mean angle: {mean_angle_rad}")
+        # print(f"Mean angle: {mean_angle_rad}")
         depth_m = np.array(list(name_to_depth.values()))
         mean_depth_m = np.mean(depth_m)
-        print(f"Mean depth: {mean_depth_m}")
-        print("\n")
-        for name, value in sorted(name_to_depth.items(), key=lambda item: item[1]):
-            print(f"{name} is at {value}m")
-        print("-----")
+        # print(f"Mean depth: {mean_depth_m}")
+        # print("\n")
+        # for name, value in sorted(name_to_depth.items(), key=lambda item: item[1]):
+        #     print(f"{name} is at {value}m")
+        # print("-----")
         if np.isnan(mean_angle_rad) or np.isnan(mean_depth_m):
             return
         new_target = Target()
@@ -187,7 +187,6 @@ class RobotFrameTransform(Node):
         # transform_stamped = self.tf_buffer.lookup_transform("base_link", msg.header.frame_id, msg.header.stamp);
         # Will want to multiply rotation matrix with my angle to get angle in correct frame of reference
         # For now assume same angle
-        delta = 5
         # mid = self.lidar_scan.ranges[0: delta] + self.lidar_scan.ranges[-delta:]
         # print(mid)
 
