@@ -15,7 +15,7 @@ class LocalMovement(Node):
         super().__init__('local_movement')
         self.target_subscription = self.create_subscription(
             Target,
-            '/follow/target',
+            '/command/target',
             self.process_target,
             10)
         self.target_subscription

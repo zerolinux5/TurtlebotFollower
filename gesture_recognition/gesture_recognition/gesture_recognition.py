@@ -5,8 +5,6 @@ from . import venv_hack
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from cv_bridge import CvBridge, CvBridgeError
-from rclpy.time import Time
 
 # Other includes
 import onnxruntime as ort
@@ -29,7 +27,6 @@ class GestureRecognizer(Node):
             self.pose_parser,
             10)
         self.pose_subscriber
-        self.bridge = CvBridge()
         self.gesture_publisher = self.create_publisher(String, '/gesture/gesture_as_str', 10)
         self.ort_session = ort.InferenceSession("/home/GTL/jmagana/gte/ml/TurtlebotFollower/gesture_mlp.onnx")
 
