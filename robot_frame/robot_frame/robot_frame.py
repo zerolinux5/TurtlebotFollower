@@ -12,6 +12,7 @@ from sensor_msgs.msg import LaserScan, CameraInfo, Image
 
 import numpy as np
 import math
+import uuid
 
 
 class RobotFrameTransform(Node):
@@ -178,6 +179,7 @@ class RobotFrameTransform(Node):
         if np.isnan(mean_angle_rad) or np.isnan(mean_depth_m):
             return
         new_target = Target()
+        new_target.uuid = msg.pose.uuid
         new_target.header.stamp = self.get_clock().now().to_msg()
         new_target.header.frame_id = "base_link"
         new_target.angle_from_center_rad = mean_angle_rad

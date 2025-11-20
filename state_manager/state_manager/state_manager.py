@@ -9,7 +9,7 @@ from collections import deque
 
 # Message includes
 from follow_msg.msg import Target
-from std_msgs.msg import String
+from mediapipe_msg.msg import Gesture
 
 IDX_TO_CLASS_MAPPING = {'follow': 0, 'other': 1, 'stop': 2}
 
@@ -24,7 +24,7 @@ class StateMachine(Node):
     def __init__(self):
         super().__init__('state_machine')
         self.gesture_subscriber = self.create_subscription(
-            String,
+            Gesture,
             '/gesture/gesture_as_str',
             self.parse_gesture,
             10)
@@ -45,7 +45,7 @@ class StateMachine(Node):
             self.command_target_publisher.publish(msg)
 
     def parse_gesture(self, msg):
-        self.past_gestures.append(msg.data)
+        self.past_gestures.append(msg.gesture)
         if len(self.past_gestures) > self.limit:
             self.past_gestures.popleft()
         if len(self.past_gestures) == self.limit:

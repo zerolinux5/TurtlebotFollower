@@ -17,6 +17,7 @@ import cv2
 from enum import Enum
 from typing import Tuple, Union
 import math
+import uuid
 
 # Message includes
 from sensor_msgs.msg import Image
@@ -130,6 +131,7 @@ class MediaPipe(Node):
         self.debug_publisher.publish(debug_image)
         for human in results.pose_landmarks:
             new_pose = PoseStamped()
+            new_pose.pose.uuid = str(uuid.uuid4())
             new_pose.header.stamp = self.get_clock().now().to_msg()
             new_pose.header.frame_id = "camera_rgb_frame"
             for idx, landmark in enumerate(human):
@@ -146,9 +148,9 @@ class MediaPipe(Node):
                     new_landmark.is_pixel_valid = True
                 else:
                     new_landmark.is_pixel_valid = False
-                new_landmark.x = landmark.x
-                new_landmark.y = landmark.y
-                new_landmark.z = landmark.z
+                new_landmark.normalized_x = landmark.x
+                new_landmark.normalized_y = landmark.y
+                new_landmark.normalized_z = landmark.z
                 new_landmark.visibility = landmark.visibility
                 new_landmark.presence = landmark.presence
                 new_pose.pose.landmarks[idx] = new_landmark

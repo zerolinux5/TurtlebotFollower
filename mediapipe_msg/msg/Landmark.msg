@@ -1,9 +1,13 @@
 string name
-float64 x
-float64 y
-float64 z
+float64 normalized_x
+float64 normalized_y
+float64 normalized_z
+float64 world_x
+float64 world_y
+float64 world_z
 float64 visibility
 float64 presence
 int32 pixel_x
 int32 pixel_y
 bool is_pixel_valid
+bool is_world_valid
