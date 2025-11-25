@@ -48,6 +48,7 @@ class RobotFrameTransform(Node):
             self.lidar_processor,
             10)
             
+        self.world_pose_publisher = self.create_publisher(PoseStamped, '/landmark/world_pose', 10)
         self.target_publisher = self.create_publisher(Target, '/follow/target', 10)
         self.debug_marker = self.create_publisher(MarkerArray, '/debug/markers', 10)
         self.debug_angle_marker = self.create_publisher(Marker, '/debug/angle_arrow', 10)
@@ -125,7 +126,8 @@ class RobotFrameTransform(Node):
         name_to_depth = {}
 
         dci = self.depth_camera.header.frame_id
-        t = self.tfBuffer.lookup_transform("base_link", dci, Time())
+        target_reference_frame = "base_link"
+        t = self.tfBuffer.lookup_transform(target_reference_frame, dci, Time())
         q = t.transform.rotation
         x, y, z, w = q.x, q.y, q.z, q.w
         R = np.array([
@@ -141,6 +143,9 @@ class RobotFrameTransform(Node):
         depth_tolerance = 1e-3
         height, width = depth_image.shape
         marker_array = MarkerArray()
+        world_pose = msg
+        world_pose.header.stamp = self.get_clock().now().to_msg()
+        world_pose.header.frame_id = target_reference_frame
         for idx, landmark in enumerate(msg.pose.landmarks):
             if not landmark.is_pixel_valid:
                 continue
@@ -161,6 +166,10 @@ class RobotFrameTransform(Node):
             p_cam = np.array([real_x, real_y, depth_point])
             p_base = R @ p_cam + T
             name_to_depth[name] = depth_point
+            world_pose.pose.landmarks[idx].is_world_valid = True
+            world_pose.pose.landmarks[idx].world_x = p_base[0]
+            world_pose.pose.landmarks[idx].world_y = p_base[1]
+            world_pose.pose.landmarks[idx].world_z = p_base[2]
             marker = self.display_marker_from_3d_point(p_base, idx)
             marker_array.markers.append(marker)
         self.debug_marker.publish(marker_array)
@@ -185,6 +194,7 @@ class RobotFrameTransform(Node):
         new_target.angle_from_center_rad = mean_angle_rad
         new_target.depth_m = mean_depth_m
         self.target_publisher.publish(new_target)
+        self.world_pose_publisher.publish(world_pose)
         # tf2_kdl pykdl
         # transform_stamped = self.tf_buffer.lookup_transform("base_link", msg.header.frame_id, msg.header.stamp);
         # Will want to multiply rotation matrix with my angle to get angle in correct frame of reference
