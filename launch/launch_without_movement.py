@@ -6,6 +6,10 @@ import launch_ros.actions
 def generate_launch_description():
     ld = LaunchDescription([
         launch_ros.actions.Node(
+            package='tracking', executable='yolo', name='yolo',
+            remappings=[],
+            output='screen'),
+        launch_ros.actions.Node(
             package='mediapipe_p', executable='mediapipe', name='mediapipe',
             remappings=[],
             output='log'),

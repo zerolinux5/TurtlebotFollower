@@ -42,10 +42,11 @@ class GestureRecognizer(Node):
         logits = outputs[0]
         pred_class = IDX_TO_CLASS_MAPPING[int(np.argmax(logits, axis=1)[0])]
         msg_as_str = Gesture()
+        msg_as_str.id = msg.pose.id
         msg_as_str.uuid = msg.pose.uuid
         msg_as_str.gesture = pred_class
         self.gesture_publisher.publish(msg_as_str)
-        print(f"Predicted class: ", pred_class)
+        self.get_logger().info(f"Predicted class: {pred_class}")
 
 def main(args=None):
     try:

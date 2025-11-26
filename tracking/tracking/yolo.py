@@ -39,7 +39,7 @@ class YoloNode(Node):
         try:
             frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         except CvBridgeError:
-            print("Error converting frame skipping")
+            self.get_logger().info("Error converting frame skipping")
             return
         results = self.model.track(
             frame,

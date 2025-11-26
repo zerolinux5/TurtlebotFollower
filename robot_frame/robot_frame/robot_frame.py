@@ -105,11 +105,11 @@ class RobotFrameTransform(Node):
     def pose_processor(self, msg):
         # no lidar nothing to do
         if not self.camera_info:
-            print("Missing Camera info")
+            self.get_logger().info("Missing Camera info")
         if not self.depth_camera:
-            print("Missing Depth Camera")
+            self.get_logger().info("Missing Depth Camera")
         if not self.depth_camera_info:
-            print("Missing Depth Camera info")
+            self.get_logger().info("Missing Depth Camera info")
         if not self.camera_info or not self.depth_camera or not self.depth_camera_info:
         # if not self.lidar_scan or not self.camera_info or not self.depth_camera or not self.depth_camera_info:
             return
@@ -189,6 +189,7 @@ class RobotFrameTransform(Node):
             return
         new_target = Target()
         new_target.uuid = msg.pose.uuid
+        new_target.id = msg.pose.id
         new_target.header.stamp = self.get_clock().now().to_msg()
         new_target.header.frame_id = "base_link"
         new_target.angle_from_center_rad = mean_angle_rad
