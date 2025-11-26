@@ -18,9 +18,11 @@ from enum import Enum
 from typing import Tuple, Union
 import math
 import uuid
+import numpy as np
 
 # Message includes
 from sensor_msgs.msg import Image
+from tracking_msg.msg import TrackingImage
 from mediapipe_msg.msg import Landmark, PoseStamped
 
 BaseOptions = mp.tasks.BaseOptions
@@ -76,13 +78,14 @@ class MediaPipe(Node):
     def __init__(self):
         super().__init__('mediapipe')
         self.img_subscriber = self.create_subscription(
-            Image,
-            '/astra/color/image_raw',
+            TrackingImage,
+            '/tracking/tracked_image',
             self.img_parser,
             10)
         self.img_subscriber
         self.bridge = CvBridge()
         self.debug_publisher = self.create_publisher(Image, '/landmark/debug_image', 10)
+        self.debug_original_publisher = self.create_publisher(Image, '/landmark/debug_original_image', 10)
         self.landmark_publisher = self.create_publisher(PoseStamped, '/landmark/normalized_pose', 10)
         self.landmarker = PoseLandmarker.create_from_options(options)
 
@@ -105,10 +108,20 @@ class MediaPipe(Node):
         x_px = min(math.floor(normalized_x * image_width), image_width - 1)
         y_px = min(math.floor(normalized_y * image_height), image_height - 1)
         return x_px, y_px
+    
+    def _pixel_coordinates_to_full_image_coordinates(self, pixel_x, pixel_y, crop_x1, crop_y1):
+        x_full = pixel_x + crop_x1
+        y_full = pixel_y + crop_y1
+        return x_full, y_full
+    
+    def _full_image_coordinates_to_normalized(self, pixel_x, pixel_y, full_width, full_height):
+        x_norm = pixel_x / full_width
+        y_norm = pixel_y / full_height
+        return x_norm, y_norm
 
     def img_parser(self, msg):
         try:
-            image = self.bridge.imgmsg_to_cv2(msg, "rgb8")
+            image = self.bridge.imgmsg_to_cv2(msg.frame, "rgb8")
         except CvBridgeError as e:
             self.get_logger().info("Failed: ", str(e))
             return
@@ -120,7 +133,6 @@ class MediaPipe(Node):
             pose_landmarks = pose_landmarks_list[idx]
             pose_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
             normalized_data = [landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in pose_landmarks]
-
             pose_landmarks_proto.landmark.extend(normalized_data)
             mp_drawing.draw_landmarks(
                 image, pose_landmarks_proto, mp_pose.POSE_CONNECTIONS)
@@ -132,8 +144,10 @@ class MediaPipe(Node):
         for human in results.pose_landmarks:
             new_pose = PoseStamped()
             new_pose.pose.uuid = str(uuid.uuid4())
+            new_pose.pose.id = msg.id
             new_pose.header.stamp = self.get_clock().now().to_msg()
             new_pose.header.frame_id = "camera_rgb_frame"
+            black_image = np.zeros((msg.original_height, msg.original_width, 3), dtype=np.uint8)
             for idx, landmark in enumerate(human):
                 new_landmark = Landmark()
                 new_landmark.name = LandMarkEnum(idx).name
@@ -143,17 +157,26 @@ class MediaPipe(Node):
                 pixel_y = None
                 if pix_xy is not None:
                     pixel_x, pixel_y = pix_xy
-                    new_landmark.pixel_x = pixel_x
-                    new_landmark.pixel_y = pixel_y
+                    x_full, y_full = self._pixel_coordinates_to_full_image_coordinates(pixel_x, pixel_y, msg.x1, msg.y1)
+                    norm_x, norm_y = self._full_image_coordinates_to_normalized(x_full, y_full, msg.original_width, msg.original_height)
+                    new_landmark.pixel_x = x_full
+                    new_landmark.pixel_y = y_full
+                    new_landmark.normalized_x = norm_x
+                    new_landmark.normalized_y = norm_y
+                    cv2.circle(black_image, (int(x_full), int(y_full)), radius=3, color=(0, 255, 0), thickness=-1)
                     new_landmark.is_pixel_valid = True
                 else:
+                    new_landmark.normalized_x = landmark.x
+                    new_landmark.normalized_y = landmark.y
                     new_landmark.is_pixel_valid = False
-                new_landmark.normalized_x = landmark.x
-                new_landmark.normalized_y = landmark.y
                 new_landmark.normalized_z = landmark.z
                 new_landmark.visibility = landmark.visibility
                 new_landmark.presence = landmark.presence
                 new_pose.pose.landmarks[idx] = new_landmark
+            debug_image = self.bridge.cv2_to_imgmsg(black_image, "rgb8")
+            debug_image.header.stamp = self.get_clock().now().to_msg()
+            debug_image.header.frame_id = "camera_rgb_frame"
+            self.debug_original_publisher.publish(debug_image)
             self.landmark_publisher.publish(new_pose)
 
 
