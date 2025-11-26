@@ -54,3 +54,4 @@ qtcreator-*
 CATKIN_IGNORE
 *.onnx
 *.onnx.data
+*.pt
