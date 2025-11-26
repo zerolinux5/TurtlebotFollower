@@ -16,7 +16,14 @@ H = np.array([
     [0, 1, 0, 0]
 ], dtype=float)
 R = np.eye(2) * (0.05**2)
-Q_base = np.eye(4) * 0.05
+Q_base = np.array([
+        [1/3, 0, 1/2,  0],
+        [0, 1/3,  0, 1/2],
+        [1/2, 0,  1,  0],
+        [0, 1/2,  0,  1]
+    ], dtype=float) * 5
+chi_distribution = 5.991
+
 
 def make_A(dt):
     return np.array([
@@ -26,18 +33,28 @@ def make_A(dt):
         [0, 0,  0,  1]
     ], dtype=float)
 
+def get_s(P):
+    S = H @ P @ H.T + R
+    return np.linalg.inv(S)
+
 def predict(x, P, dt):
     A = make_A(dt)
-    Q = Q_base * dt
+    dt_3 = dt**3
+    dt_2 = dt**2
+    T = np.array([
+        [dt_3, dt_3, dt_2,  dt_2],
+        [dt_3, dt_3, dt_2,  dt_2],
+        [dt_2, dt_2, dt,  dt],
+        [dt_2, dt_2, dt,  dt]
+    ], dtype=float)
+    Q = Q_base * T
     x = A @ x
     P = A @ P @ A.T + Q
     return x, P
 
 def update(x, P, z):
-    S = H @ P @ H.T + R
-    K = P @ H.T @ np.linalg.inv(S)
-    y = z - (H @ x)
-    x = x + (K @ y)
+    K = P @ H.T @ get_s(P)
+    x = x + (K @ (z - (H @ x)))
     P = (np.eye(4) - K @ H) @ P
     return x, P
 
@@ -47,18 +64,24 @@ class Person:
         self.P = Q_base
         self.id = id_
         self.last_marked = time.time()
+        self.times_read = 0
 
-    def is_person(self, x, y):
-        my_x = self.x[0]
-        my_y = self.x[1]
-        tolerance = 0.5
-        return abs(x - my_x) < tolerance and abs(y - my_y) < tolerance
+    def get_d_2(self, z):
+        y = z - (H @ self.x)
+        S = get_s(self.P)
+        d_2 = y.T @ S @ y
+        return d_2
     
     def update(self, x, P, measured=False):
         self.x = x
         self.P = P
         if measured:
             self.last_marked = time.time()
+            self.times_read += 1
+
+    def is_valid(self):
+        tolerance = 5
+        return self.times_read >= tolerance
 
     def should_delete(self, curr_time):
         tolerance = 3
@@ -113,20 +136,25 @@ class KalmanFilter(Node):
             [final_x],
             [final_y]
         ], dtype=float)
-        is_found = False
-        for person in self.tracking.values():
-            if person.is_person(final_x, final_y):
-                is_found = True
-                x, P = update(person.x, person.P, z)
-                person.update(x, P, True)
-                break
-        if not is_found:
+        person_id = None
+        smallest_d_2 = float("inf")
+        for id_, person in self.tracking.items():
+            d_2 = person.get_d_2(z)
+            if d_2 < smallest_d_2:
+                person_id = id_
+                smallest_d_2 = d_2
+        if smallest_d_2 <= chi_distribution:
+            person = self.tracking[person_id]
+            x, P = update(person.x, person.P, z)
+            person.update(x, P, True)
+        else:
             person_id = str(uuid.uuid4())
             person = Person(final_x, final_y, person_id)
             self.tracking[person_id] = person
         print("Num: ", len(self.tracking))
         for person in self.tracking.values():
-            print(f"X: {person.x[0]}, Y: {person.x[1]}")
+            if person.is_valid():
+                print(f"X: {person.x[0]}, Y: {person.x[1]}")
 
 
 def main(args=None):
