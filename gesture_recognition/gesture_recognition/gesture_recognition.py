@@ -30,7 +30,7 @@ class GestureRecognizer(Node):
         self.ort_session = ort.InferenceSession("/home/GTL/jmagana/gte/ml/TurtlebotFollower/gesture_mlp.onnx")
 
     def landmark_to_float(self, landmark):
-        return [landmark.normalized_x, landmark.normalized_y, landmark.normalized_z, landmark.visibility, landmark.presence]
+        return [landmark.normalized_x, landmark.normalized_y, landmark.normalized_z, landmark.visibility, landmark.presence, float(landmark.is_pixel_valid)]
 
     def pose_parser(self, msg):
         landmarks = []

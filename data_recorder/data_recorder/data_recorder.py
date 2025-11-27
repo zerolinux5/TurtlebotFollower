@@ -97,7 +97,7 @@ class DataRecorder(Node):
         return 5
     
     def landmark_to_str(self, landmark):
-        return f"{landmark.x}, {landmark.y}, {landmark.z}, {landmark.visibility}, {landmark.presence}"
+        return f"{landmark.normalized_x}, {landmark.normalized_y}, {landmark.normalized_z}, {landmark.visibility}, {landmark.presence}, {landmark.is_pixel_valid}"
 
 
 def main(args=None):
