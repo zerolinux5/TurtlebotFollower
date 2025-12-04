@@ -41,14 +41,14 @@ class DynamicWindowPlanner(Node):
         self.goal_depth_m = None
 
         self.v_min, self.v_max = 0.05, 0.11
-        self.w_min, self.w_max = -0.5, 0.5
+        self.w_min, self.w_max = -0.35, 0.35
 
-        self.robot_radius = 0.28
+        self.robot_radius = 0.29
         self.dt = 0.1
         self.horizon = 1.0
 
     def update(self):
-        timeout_s = 2.0
+        timeout_s = 5.0
         timeout_delta = time.time() - self.last_msg_time
         if timeout_delta > timeout_s:
             self.goal_angle_rad = 0.0
@@ -90,7 +90,7 @@ class DynamicWindowPlanner(Node):
 
                 score_speed = v
 
-                score = 3.0 * score_speed + 0.6 * score_heading - obstacle_cost * 0.5
+                score = 3.0 * score_speed + 0.6 * score_heading - obstacle_cost * 1.0
 
                 if score > best_score:
                     best_score = score
