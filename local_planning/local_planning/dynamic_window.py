@@ -48,15 +48,15 @@ class DynamicWindowPlanner(Node):
         self.horizon = 1.0
 
     def update(self):
-        timeout_s = 5.0
-        timeout_delta = time.time() - self.last_msg_time
-        if timeout_delta > timeout_s:
-            self.goal_angle_rad = 0.0
-            self.goal_depth_m = None
-            zero_velocity = Twist()
-            self.local_publisher.publish(zero_velocity)
-            self.get_logger().info(f"No command received in {timeout_delta} seconds")
-            return
+        # timeout_s = 10.0
+        # timeout_delta = time.time() - self.last_msg_time
+        # if timeout_delta > timeout_s:
+        #     self.goal_angle_rad = 0.0
+        #     self.goal_depth_m = None
+        #     zero_velocity = Twist()
+        #     self.local_publisher.publish(zero_velocity)
+        #     self.get_logger().info(f"No command received in {timeout_delta} seconds")
+        #     return
         
         # No lidar scan topic
         if self.last_scan is None:
@@ -200,7 +200,7 @@ class DynamicWindowPlanner(Node):
         marker.action = Marker.ADD
         marker.pose.orientation.z = math.sin(half)
         marker.pose.orientation.w = math.sin(half)
-        marker.scale.x = 0.5
+        marker.scale.x = 3.0 * distance
         marker.scale.y = 0.05
         marker.scale.z = 0.05
         marker.color.a = 1.0
