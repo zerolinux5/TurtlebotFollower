@@ -170,10 +170,23 @@ class DynamicWindowPlanner(Node):
         # closest_angle = self.last_scan.angle_min + closest_idx * msg.angle_increment
         # self.get_logger().info(f"Closest obstacle: {closest_dist:.2f} m at {closest_angle:.2f} rad")
 
+    def smooth_angle(self, current_angle, alpha=0.2):
+        px, py = math.cos(self.goal_angle_rad), math.sin(self.goal_angle_rad)
+        cx, cy = math.cos(current_angle), math.sin(current_angle)
+
+        x = (1-alpha)*px + alpha*cx
+        y = (1-alpha)*py + alpha*cy
+
+        return math.atan2(y, x)
+
     def set_target(self, msg):
         self.last_msg_time = time.time()
         # inverse goal direction angle.
-        self.goal_angle_rad = -msg.angle_from_center_rad
+        new_angle = -msg.angle_from_center_rad
+        if self.goal_angle_rad is None:
+            self.goal_angle_rad = new_angle
+        else:
+            self.goal_angle_rad = self.smooth_angle(new_angle)
         self.goal_depth_m = msg.depth_m
 
     def display_arrow_from_angle(self, angle, distance):
