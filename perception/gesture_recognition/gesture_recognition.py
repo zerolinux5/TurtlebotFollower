@@ -30,7 +30,7 @@ class GestureRecognizer(Node):
         self.pose_subscriber
         self.gesture_publisher = self.create_publisher(Gesture, '/gesture/gesture_as_str', 10)
         model_path = os.path.join(
-            get_package_share_directory('gesture_recognition'),
+            get_package_share_directory('perception'),
             'models',
             'gesture_mlp.onnx'
         )

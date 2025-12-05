@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'gesture_recognition'
+package_name = 'perception'
 
 setup(
     name=package_name,
@@ -11,6 +11,8 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/models', ['models/gesture_mlp.onnx', 'models/gesture_mlp.onnx.data']),
+        ('share/' + package_name + '/configs', ['configs/bytetrack.yaml', 'configs/botsort.yaml']),
+        ('share/' + package_name + '/launch', ['launch/perception_launch.py'])
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -20,8 +22,11 @@ setup(
     license='MIT',
     tests_require=['pytest'],
     entry_points={
-            'console_scripts': [
-                'recognizer = gesture_recognition.gesture_recognition:main',
-            ],
+        'console_scripts': [
+            'mediapipe = mediapipe_p.mediapipe_p:main',
+            'recognizer = gesture_recognition.gesture_recognition:main',
+            'robot_frame_transform = robot_frame.robot_frame:main',
+            'yolo = tracking.yolo:main'
+        ],
     },
 )

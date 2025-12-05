@@ -35,7 +35,7 @@ class YoloNode(Node):
         self.model = YOLO("yolo11n.pt").to("cpu")
         self.classes = [0]
         config_path = os.path.join(
-            get_package_share_directory('tracking'),
+            get_package_share_directory('perception'),
             'configs',
             'botsort.yaml'
         )
