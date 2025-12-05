@@ -1,5 +1,5 @@
 # keep venv
-from . import venv_hack
+from venv_hack import venv_hack
 
 # ros includes
 import rclpy
