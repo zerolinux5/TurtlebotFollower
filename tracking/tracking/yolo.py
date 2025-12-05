@@ -5,6 +5,7 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.time import Time
+from ament_index_python.packages import get_package_share_directory
 
 from sensor_msgs.msg import Image
 from tracking_msg.msg import TrackingImage
@@ -12,7 +13,7 @@ from cv_bridge import CvBridge, CvBridgeError
 
 import cv2
 from ultralytics import YOLO
-
+import os
 
 class YoloNode(Node):
 
@@ -33,7 +34,12 @@ class YoloNode(Node):
 
         self.model = YOLO("yolo11n.pt").to("cpu")
         self.classes = [0]
-        self.tracker_config = "/home/GTL/jmagana/gte/ml/TurtlebotFollower/botsort.yaml"
+        config_path = os.path.join(
+            get_package_share_directory('tracking'),
+            'configs',
+            'botsort.yaml'
+        )
+        self.tracker_config = config_path
 
     def process_img(self, msg):
         try:

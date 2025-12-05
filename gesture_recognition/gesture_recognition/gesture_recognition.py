@@ -5,10 +5,12 @@ from . import venv_hack
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from ament_index_python.packages import get_package_share_directory
 
 # Other includes
 import onnxruntime as ort
 import numpy as np
+import os
 
 # Message includes
 from mediapipe_msg.msg import PoseStamped, Gesture
@@ -27,7 +29,12 @@ class GestureRecognizer(Node):
             10)
         self.pose_subscriber
         self.gesture_publisher = self.create_publisher(Gesture, '/gesture/gesture_as_str', 10)
-        self.ort_session = ort.InferenceSession("/home/GTL/jmagana/gte/ml/TurtlebotFollower/gesture_mlp.onnx")
+        model_path = os.path.join(
+            get_package_share_directory('gesture_recognition'),
+            'models',
+            'gesture_mlp.onnx'
+        )
+        self.ort_session = ort.InferenceSession(model_path)
 
     def landmark_to_float(self, landmark):
         return [landmark.normalized_x, landmark.normalized_y, landmark.normalized_z, landmark.visibility, landmark.presence, float(landmark.is_pixel_valid)]
