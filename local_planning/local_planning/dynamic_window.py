@@ -43,21 +43,11 @@ class DynamicWindowPlanner(Node):
         self.v_min, self.v_max = 0.05, 0.11
         self.w_min, self.w_max = -0.35, 0.35
 
-        self.robot_radius = 0.29
+        self.robot_radius = 0.21
         self.dt = 0.1
-        self.horizon = 1.0
+        self.horizon = 3.0
 
     def update(self):
-        # timeout_s = 10.0
-        # timeout_delta = time.time() - self.last_msg_time
-        # if timeout_delta > timeout_s:
-        #     self.goal_angle_rad = 0.0
-        #     self.goal_depth_m = None
-        #     zero_velocity = Twist()
-        #     self.local_publisher.publish(zero_velocity)
-        #     self.get_logger().info(f"No command received in {timeout_delta} seconds")
-        #     return
-        
         # No lidar scan topic
         if self.last_scan is None:
             return
@@ -72,25 +62,16 @@ class DynamicWindowPlanner(Node):
 
         best_score = -1e9
         best_v, best_w = 0.0, 0.0
-        # self.get_logger().info(f"Goal: {np.degrees(self.goal_angle_rad)}")
-        # angles = self.last_scan.angle_min + np.arange(len(self.last_scan.ranges)) * self.last_scan.angle_increment
-        # ranges = np.array(self.last_scan.ranges)
-        # for r, a in zip(ranges, angles):
-        #     self.get_logger().info(f"AR: {np.degrees(a)} : {r}")
         for v in v_samples:
             for w in w_samples:
                 obstacle_cost = self.get_distance_cost(v, w)
-                # self.get_logger().info(f"VWO: {v} : {w} | {obstacle_cost}")
-                # if not self.trajectory_safe(v, w):
-                #     self.get_logger.info(f"{v} : {w} crashed")
-                #     obstacle_cost = 100.0
 
                 desired_w = self.goal_angle_rad / self.horizon
                 score_heading = -abs(w - desired_w)
 
                 score_speed = v
 
-                score = 3.0 * score_speed + 0.6 * score_heading - obstacle_cost * 1.0
+                score = 1.0 * score_speed + 1.5 * score_heading - obstacle_cost * 0.1
 
                 if score > best_score:
                     best_score = score
@@ -162,13 +143,6 @@ class DynamicWindowPlanner(Node):
         arr = np.roll(arr, n // 2)
         self.last_scan.ranges = arr
         self.last_scan.angle_min = -np.pi
-        # valid_indicies = np.where(arr > 0.19)[0]
-        # if len(valid_indicies) == 0:
-        #     return
-        # closest_idx = valid_indicies[np.argmin(arr[valid_indicies])]
-        # closest_dist = arr[closest_idx]
-        # closest_angle = self.last_scan.angle_min + closest_idx * msg.angle_increment
-        # self.get_logger().info(f"Closest obstacle: {closest_dist:.2f} m at {closest_angle:.2f} rad")
 
     def smooth_angle(self, current_angle, alpha=0.2):
         px, py = math.cos(self.goal_angle_rad), math.sin(self.goal_angle_rad)
