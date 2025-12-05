@@ -43,6 +43,12 @@ class DynamicWindowPlanner(Node):
         self.declare_parameter('speed_weight', 1.0)
         self.declare_parameter('score_weight', 1.5)
         self.declare_parameter('obstacle_weight', 0.1)
+        self.declare_parameter('v_min', 0.05)
+        self.declare_parameter('v_max', 0.11)
+        self.declare_parameter('v_step', 20)
+        self.declare_parameter('w_min', -0.45)
+        self.declare_parameter('w_max', 0.45)
+        self.declare_parameter('w_step', 30)
 
         # Local variables
         self.last_scan = None
@@ -51,9 +57,6 @@ class DynamicWindowPlanner(Node):
         self.goal_angle_rad = 0.0
         self.goal_depth_m = None
 
-        self.v_min, self.v_max = 0.05, 0.11
-        self.w_min, self.w_max = -0.45, 0.45
-
         # variables based off parameters
         self.robot_radius = self.get_parameter('robot_radius').get_parameter_value().double_value
         self.dt = self.get_parameter('dt').get_parameter_value().double_value
@@ -61,6 +64,12 @@ class DynamicWindowPlanner(Node):
         self.speed_weight = self.get_parameter('speed_weight').get_parameter_value().double_value
         self.score_weight = self.get_parameter('score_weight').get_parameter_value().double_value
         self.obstacle_weight = self.get_parameter('obstacle_weight').get_parameter_value().double_value
+        self.v_min = self.get_parameter('v_min').get_parameter_value().double_value
+        self.v_max = self.get_parameter('v_max').get_parameter_value().double_value
+        self.v_step = self.get_parameter('v_step').get_parameter_value().integer_value
+        self.w_min = self.get_parameter('w_min').get_parameter_value().double_value
+        self.w_max = self.get_parameter('w_max').get_parameter_value().double_value
+        self.w_step = self.get_parameter('w_step').get_parameter_value().integer_value
 
     def update(self):
         # No lidar scan topic
@@ -69,11 +78,12 @@ class DynamicWindowPlanner(Node):
         
         # At target stop or target doesn't make sense
         if self.goal_depth_m is None or self.goal_depth_m < 1.1:
+            self.get_logger().info(f"Publishing Zero")
             self.local_publisher.publish(Twist())
             return
         
-        v_samples = np.linspace(self.v_min, self.v_max, 20)
-        w_samples = np.linspace(self.w_min, self.w_max, 30)
+        v_samples = np.linspace(self.v_min, self.v_max, self.v_step)
+        w_samples = np.linspace(self.w_min, self.w_max, self.w_step)
 
         best_score = -1e9
         best_v, best_w = 0.0, 0.0
