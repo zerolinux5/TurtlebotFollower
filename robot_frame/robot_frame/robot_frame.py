@@ -12,7 +12,6 @@ from sensor_msgs.msg import LaserScan, CameraInfo, Image
 
 import numpy as np
 import math
-import uuid
 
 
 class RobotFrameTransform(Node):
@@ -176,19 +175,11 @@ class RobotFrameTransform(Node):
         angle_rads = np.array(angle_rads)
         mean_angle_rad = np.mean(angle_rads)
         self.debug_angle_marker.publish(self.display_arrow_from_angle(mean_angle_rad))
-        # positve clockwise
-        # print(f"Mean angle: {mean_angle_rad}")
         depth_m = np.array(list(name_to_depth.values()))
         mean_depth_m = np.mean(depth_m)
-        # print(f"Mean depth: {mean_depth_m}")
-        # print("\n")
-        # for name, value in sorted(name_to_depth.items(), key=lambda item: item[1]):
-        #     print(f"{name} is at {value}m")
-        # print("-----")
         if np.isnan(mean_angle_rad) or np.isnan(mean_depth_m):
             return
         new_target = Target()
-        new_target.uuid = msg.pose.uuid
         new_target.id = msg.pose.id
         new_target.header.stamp = self.get_clock().now().to_msg()
         new_target.header.frame_id = "base_link"
@@ -196,12 +187,6 @@ class RobotFrameTransform(Node):
         new_target.depth_m = mean_depth_m
         self.target_publisher.publish(new_target)
         self.world_pose_publisher.publish(world_pose)
-        # tf2_kdl pykdl
-        # transform_stamped = self.tf_buffer.lookup_transform("base_link", msg.header.frame_id, msg.header.stamp);
-        # Will want to multiply rotation matrix with my angle to get angle in correct frame of reference
-        # For now assume same angle
-        # mid = self.lidar_scan.ranges[0: delta] + self.lidar_scan.ranges[-delta:]
-        # print(mid)
 
 
     def get_depth_camera_instrinsics(self, msg):

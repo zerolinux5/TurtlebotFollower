@@ -20,7 +20,6 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'kalman_filter = tracking.kalman_filter:main',
             'yolo = tracking.yolo:main'
         ],
     },
