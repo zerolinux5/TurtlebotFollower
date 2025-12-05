@@ -19,6 +19,7 @@ class DynamicWindowPlanner(Node):
 
     def __init__(self):
         super().__init__('dynamic_window_planner')
+        # subscribers and publishers
         self.scan_subscriber = self.create_subscription(
             LaserScan,
             '/scan',
@@ -34,6 +35,16 @@ class DynamicWindowPlanner(Node):
         self.global_command_subscriber
         self.local_publisher = self.create_publisher(Twist, '/commands/velocity', 10)
         self.debug_angle_marker = self.create_publisher(Marker, '/debug/local_angle_arrow', 10)
+
+        # parameters
+        self.declare_parameter('robot_radius', 0.21)
+        self.declare_parameter('dt', 0.1)
+        self.declare_parameter('horizon', 3.0)
+        self.declare_parameter('speed_weight', 1.0)
+        self.declare_parameter('score_weight', 1.5)
+        self.declare_parameter('obstacle_weight', 0.1)
+
+        # Local variables
         self.last_scan = None
         self.last_msg_time = time.time()
         self.timer = self.create_timer(0.1, self.update)
@@ -41,11 +52,15 @@ class DynamicWindowPlanner(Node):
         self.goal_depth_m = None
 
         self.v_min, self.v_max = 0.05, 0.11
-        self.w_min, self.w_max = -0.35, 0.35
+        self.w_min, self.w_max = -0.45, 0.45
 
-        self.robot_radius = 0.21
-        self.dt = 0.1
-        self.horizon = 3.0
+        # variables based off parameters
+        self.robot_radius = self.get_parameter('robot_radius').get_parameter_value().double_value
+        self.dt = self.get_parameter('dt').get_parameter_value().double_value
+        self.horizon = self.get_parameter('horizon').get_parameter_value().double_value
+        self.speed_weight = self.get_parameter('speed_weight').get_parameter_value().double_value
+        self.score_weight = self.get_parameter('score_weight').get_parameter_value().double_value
+        self.obstacle_weight = self.get_parameter('obstacle_weight').get_parameter_value().double_value
 
     def update(self):
         # No lidar scan topic
@@ -62,20 +77,26 @@ class DynamicWindowPlanner(Node):
 
         best_score = -1e9
         best_v, best_w = 0.0, 0.0
+        # desired_w = self.goal_angle_rad / self.horizon
+        desired_w = self.goal_angle_rad
+        self.get_logger().info(f"Target Heading: {np.degrees(self.goal_angle_rad):.2f} deg {self.goal_angle_rad} rad target: {desired_w}")
         for v in v_samples:
             for w in w_samples:
                 obstacle_cost = self.get_distance_cost(v, w)
-
-                desired_w = self.goal_angle_rad / self.horizon
+                
                 score_heading = -abs(w - desired_w)
 
                 score_speed = v
-
-                score = 1.0 * score_speed + 1.5 * score_heading - obstacle_cost * 0.1
+                weighted_speed = self.speed_weight * score_speed
+                weighted_score = self.score_weight * score_heading
+                weighted_obstacle_cost = self.obstacle_weight * obstacle_cost
+                score = weighted_speed + weighted_score - weighted_obstacle_cost
+                self.get_logger().info(f"VW: {v:.4f} | {w:.4f}  | Total: {score:.3f} Speed: {weighted_speed:.3f} Score: {weighted_score:.3f} Obstacle: {weighted_obstacle_cost:.3f}")
 
                 if score > best_score:
                     best_score = score
                     best_v, best_w = v, w
+        self.get_logger().info(f"BestVW: {best_v:.4f} | {best_w:.4f}")
         self.debug_angle_marker.publish(self.display_arrow_from_angle(best_w, best_v))
         cmd = Twist()
         cmd.linear.x = best_v
@@ -92,7 +113,7 @@ class DynamicWindowPlanner(Node):
         ranges[ranges < 0.19] = float('inf')
         min_dist = float("inf")
 
-        for idx in range(steps):
+        for _ in range(steps):
             x += v * math.cos(yaw) * self.dt
             y += v * math.sin(yaw) * self.dt
             yaw += w * self.dt
@@ -120,7 +141,7 @@ class DynamicWindowPlanner(Node):
         ranges = np.array(self.last_scan.ranges)
         ranges[ranges < 0.19] = float('inf')
 
-        for idx in range(steps):
+        for _ in range(steps):
             x += v * math.cos(yaw) * self.dt
             y += v * math.sin(yaw) * self.dt
             yaw += w * self.dt
@@ -129,9 +150,6 @@ class DynamicWindowPlanner(Node):
             py = ranges * np.sin(angles)
 
             d = np.sqrt((px - x)**2 + (py - y)**2)
-            if idx == steps - 1:
-                self.get_logger().info(f"xyy: {x} : {y} : {yaw}")
-                self.get_logger().info(f"D: {d}")
             if np.any(d < self.robot_radius):
                 return False
         return True
@@ -160,7 +178,7 @@ class DynamicWindowPlanner(Node):
         if self.goal_angle_rad is None:
             self.goal_angle_rad = new_angle
         else:
-            self.goal_angle_rad = self.smooth_angle(new_angle)
+            self.goal_angle_rad = self.smooth_angle(new_angle, 0.7)
         self.goal_depth_m = msg.depth_m
 
     def display_arrow_from_angle(self, angle, distance):

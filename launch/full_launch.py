@@ -21,7 +21,7 @@ def generate_launch_description():
             remappings=[],
             output='screen'),
         launch_ros.actions.Node(
-            package='local_movement', executable='local_movement', name='local_movement',
+            package='local_planning', executable='dynamic_window', name='dynamic_window',
             parameters=[],
             output='screen'),
     ])
