@@ -1,26 +1,20 @@
 from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 
-import launch_ros.actions
+import os
 
 def generate_launch_description():
+    launch_without_movement_file = os.path.join(
+        os.path.dirname(__file__),
+        'launch_without_movement.py'
+    )
     ld = LaunchDescription([
-        launch_ros.actions.Node(
-            package='mediapipe_p', executable='mediapipe', name='mediapipe',
-            remappings=[]),
-        launch_ros.actions.Node(
-            package='robot_frame', executable='robot_frame_transform', name='robot_frame_transform',
-            remappings=[],
-            output='screen'),
-        launch_ros.actions.Node(
-            package='gesture_recognition', executable='recognizer', name='recognizer',
-            remappings=[],
-            output='screen'),
-        launch_ros.actions.Node(
-            package='state_manager', executable='manager', name='manager',
-            remappings=[],
-            output='screen'),
-        launch_ros.actions.Node(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(launch_without_movement_file)
+        ),
+        Node(
             package='local_planning', executable='dynamic_window', name='dynamic_window',
             parameters=[],
             output='screen'),
