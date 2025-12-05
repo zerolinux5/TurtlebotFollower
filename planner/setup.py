@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'local_planning'
+package_name = 'planner'
 
 setup(
     name=package_name,
@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'dynamic_window = local_planning.dynamic_window:main'
+            'dynamic_window = local_planning.dynamic_window:main',
+            'manager = state_manager.state_manager:main',
         ],
     },
 )
