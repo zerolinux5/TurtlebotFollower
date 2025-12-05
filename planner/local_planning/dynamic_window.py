@@ -70,6 +70,9 @@ class DynamicWindowPlanner(Node):
         self.w_min = self.get_parameter('w_min').get_parameter_value().double_value
         self.w_max = self.get_parameter('w_max').get_parameter_value().double_value
         self.w_step = self.get_parameter('w_step').get_parameter_value().integer_value
+        
+        self.v_samples = np.linspace(self.v_min, self.v_max, self.v_step)
+        self.w_samples = np.linspace(self.w_min, self.w_max, self.w_step)
 
     def update(self):
         # No lidar scan topic
@@ -81,17 +84,14 @@ class DynamicWindowPlanner(Node):
             self.get_logger().info(f"Publishing Zero")
             self.local_publisher.publish(Twist())
             return
-        
-        v_samples = np.linspace(self.v_min, self.v_max, self.v_step)
-        w_samples = np.linspace(self.w_min, self.w_max, self.w_step)
 
         best_score = -1e9
         best_v, best_w = 0.0, 0.0
         desired_w = self.goal_angle_rad / self.horizon
         # desired_w = self.goal_angle_rad
         # self.get_logger().info(f"Target Heading: {np.degrees(self.goal_angle_rad):.2f} deg {self.goal_angle_rad} rad target: {desired_w}")
-        for v in v_samples:
-            for w in w_samples:
+        for v in self.v_samples:
+            for w in self.w_samples:
                 obstacle_cost = self.get_distance_cost(v, w)
                 
                 score_heading = -abs(w - desired_w)
@@ -111,7 +111,7 @@ class DynamicWindowPlanner(Node):
         cmd = Twist()
         cmd.linear.x = best_v
         cmd.angular.z = best_w
-        self.get_logger().info(f"CMD: {cmd}")
+        # self.get_logger().info(f"CMD: {cmd}")
         self.local_publisher.publish(cmd)
 
     def min_distance_along_trajectory(self, v, w):
@@ -144,7 +144,7 @@ class DynamicWindowPlanner(Node):
 
     def trajectory_safe(self, v, w):
         steps = int(self.horizon / self.dt)
-        self.get_logger().info(f"VW: {v} | {w}")
+        # self.get_logger().info(f"VW: {v} | {w}")
         x, y, yaw = 0., 0., 0.
 
         angles = self.last_scan.angle_min + np.arange(len(self.last_scan.ranges)) * self.last_scan.angle_increment
