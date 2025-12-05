@@ -17,7 +17,6 @@ import cv2
 from enum import Enum
 from typing import Tuple, Union
 import math
-import uuid
 import numpy as np
 
 # Message includes
@@ -143,7 +142,6 @@ class MediaPipe(Node):
         self.debug_publisher.publish(debug_image)
         for human in results.pose_landmarks:
             new_pose = PoseStamped()
-            new_pose.pose.uuid = str(uuid.uuid4())
             new_pose.pose.id = msg.id
             new_pose.header.stamp = self.get_clock().now().to_msg()
             new_pose.header.frame_id = "camera_rgb_frame"
