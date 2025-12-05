@@ -77,9 +77,9 @@ class DynamicWindowPlanner(Node):
 
         best_score = -1e9
         best_v, best_w = 0.0, 0.0
-        # desired_w = self.goal_angle_rad / self.horizon
-        desired_w = self.goal_angle_rad
-        self.get_logger().info(f"Target Heading: {np.degrees(self.goal_angle_rad):.2f} deg {self.goal_angle_rad} rad target: {desired_w}")
+        desired_w = self.goal_angle_rad / self.horizon
+        # desired_w = self.goal_angle_rad
+        # self.get_logger().info(f"Target Heading: {np.degrees(self.goal_angle_rad):.2f} deg {self.goal_angle_rad} rad target: {desired_w}")
         for v in v_samples:
             for w in w_samples:
                 obstacle_cost = self.get_distance_cost(v, w)
@@ -91,7 +91,7 @@ class DynamicWindowPlanner(Node):
                 weighted_score = self.score_weight * score_heading
                 weighted_obstacle_cost = self.obstacle_weight * obstacle_cost
                 score = weighted_speed + weighted_score - weighted_obstacle_cost
-                self.get_logger().info(f"VW: {v:.4f} | {w:.4f}  | Total: {score:.3f} Speed: {weighted_speed:.3f} Score: {weighted_score:.3f} Obstacle: {weighted_obstacle_cost:.3f}")
+                # self.get_logger().info(f"VW: {v:.4f} | {w:.4f}  | Total: {score:.3f} Speed: {weighted_speed:.3f} Score: {weighted_score:.3f} Obstacle: {weighted_obstacle_cost:.3f}")
 
                 if score > best_score:
                     best_score = score

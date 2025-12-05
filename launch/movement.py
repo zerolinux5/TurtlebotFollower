@@ -9,7 +9,7 @@ def generate_launch_description():
                 {
                     'horizon': 5.0,
                     'speed_weight': 1.5,
-                    'score_weight': 1.0,
+                    'score_weight': 0.7,
                     'obstacle_weight': 0.1
                 }
             ],
