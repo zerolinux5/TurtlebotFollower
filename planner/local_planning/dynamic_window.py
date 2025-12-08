@@ -88,12 +88,15 @@ class DynamicWindowPlanner(Node):
 
         best_score = -1e9
         best_v, best_w = 0.0, 0.0
-        desired_w = self.goal_angle_rad / self.horizon
-        # desired_w = self.goal_angle_rad
+        # desired_w = self.goal_angle_rad / self.horizon
+        desired_w = self.goal_angle_rad
         # self.get_logger().info(f"Target Heading: {np.degrees(self.goal_angle_rad):.2f} deg {self.goal_angle_rad} rad target: {desired_w}")
+        steps = int(self.horizon / self.dt)
+
+        delta_steps = np.arange(steps) * self.dt
         for v in self.v_samples:
             for w in self.w_samples:
-                obstacle_cost = self.get_distance_cost(v, w)
+                obstacle_cost = self.get_distance_cost(v, w, delta_steps)
                 
                 score_heading = -abs(w - desired_w)
 
@@ -115,26 +118,18 @@ class DynamicWindowPlanner(Node):
         # self.get_logger().info(f"CMD: {cmd}")
         self.local_publisher.publish(cmd)
 
-    def min_distance_along_trajectory(self, v, w):
-        steps = int(self.horizon / self.dt)
-        x, y, yaw = 0., 0., 0.
-
-        min_dist = float("inf")
-
-        for _ in range(steps):
-            x += v * math.cos(yaw) * self.dt
-            y += v * math.sin(yaw) * self.dt
-            yaw += w * self.dt
-
-            px = self.laser_x
-            py = self.laser_y
-
-            d = np.sqrt((px - x)**2 + (py - y)**2)
-            min_dist = min(min_dist, np.min(d))
+    def min_distance_along_trajectory(self, v, w, delta_steps):
+        yaw = w * delta_steps
+        x_traj = v * np.cos(yaw) * delta_steps
+        y_traj = v * np.sin(yaw) * delta_steps
+        dx = self.laser_x[None, :] - x_traj[:, None]
+        dy = self.laser_y[None, :] - y_traj[:, None]
+        dist = np.sqrt(dx**2 + dy**2)
+        min_dist = np.min(dist)
         return min_dist
     
-    def get_distance_cost(self, v, w):
-        min_dist = self.min_distance_along_trajectory(v, w) - self.robot_radius
+    def get_distance_cost(self, v, w, delta_steps):
+        min_dist = self.min_distance_along_trajectory(v, w, delta_steps) - self.robot_radius
         if min_dist <= 0:
             return 1e6
         else:

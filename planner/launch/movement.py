@@ -8,14 +8,15 @@ def generate_launch_description():
             parameters=[
                 {
                     'horizon': 5.0,
-                    'speed_weight': 1.5,
-                    'score_weight': 0.7,
-                    'obstacle_weight': 0.1,
+                    'speed_weight': 1.0,
+                    'score_weight': 5.0,
+                    'obstacle_weight': 0.075,
                     'v_max': 0.11,
                     'v_step': 10,
-                    'w_min': -0.35,
-                    'w_max': 0.35,
-                    'v_step': 20,
+                    'w_min': -0.45,
+                    'w_max': 0.45,
+                    'w_step': 30,
+                    'robot_radius': 0.22,
                 }
             ],
             output='screen'),
