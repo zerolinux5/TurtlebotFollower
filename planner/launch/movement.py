@@ -12,7 +12,7 @@ def generate_launch_description():
                     'score_weight': 0.7,
                     'obstacle_weight': 0.1,
                     'v_max': 0.11,
-                    'v_step': 20,
+                    'v_step': 10,
                     'w_min': -0.35,
                     'w_max': 0.35,
                     'v_step': 20,

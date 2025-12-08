@@ -112,6 +112,7 @@ class StateMachine(Node):
 
     def process_target(self, msg):
         if self.current_state == State.FOLLOW and self.current_person_id and msg.id == self.current_person_id:
+            # self.get_logger().info(f"Sending message")
             self.command_target_publisher.publish(msg)
 
     def parse_gesture(self, msg):

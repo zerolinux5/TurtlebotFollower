@@ -75,6 +75,7 @@ class DynamicWindowPlanner(Node):
         self.w_samples = np.linspace(self.w_min, self.w_max, self.w_step)
 
     def update(self):
+        # self.get_logger().info(f"Inside Heading: {np.degrees(self.goal_angle_rad):.2f} deg {self.goal_angle_rad} rad target Depth: {self.goal_depth_m}")
         # No lidar scan topic
         if self.last_scan is None:
             return
@@ -106,7 +107,7 @@ class DynamicWindowPlanner(Node):
                 if score > best_score:
                     best_score = score
                     best_v, best_w = v, w
-        self.get_logger().info(f"BestVW: {best_v:.4f} | {best_w:.4f}")
+        # self.get_logger().info(f"BestVW: {best_v:.4f} | {best_w:.4f}")
         self.debug_angle_marker.publish(self.display_arrow_from_angle(best_w, best_v))
         cmd = Twist()
         cmd.linear.x = best_v
@@ -118,9 +119,6 @@ class DynamicWindowPlanner(Node):
         steps = int(self.horizon / self.dt)
         x, y, yaw = 0., 0., 0.
 
-        angles = self.last_scan.angle_min + np.arange(len(self.last_scan.ranges)) * self.last_scan.angle_increment
-        ranges = np.array(self.last_scan.ranges)
-        ranges[ranges < 0.19] = float('inf')
         min_dist = float("inf")
 
         for _ in range(steps):
@@ -128,8 +126,8 @@ class DynamicWindowPlanner(Node):
             y += v * math.sin(yaw) * self.dt
             yaw += w * self.dt
 
-            px = ranges * np.cos(angles)
-            py = ranges * np.sin(angles)
+            px = self.laser_x
+            py = self.laser_y
 
             d = np.sqrt((px - x)**2 + (py - y)**2)
             min_dist = min(min_dist, np.min(d))
@@ -142,28 +140,6 @@ class DynamicWindowPlanner(Node):
         else:
             return 1. / min_dist
 
-    def trajectory_safe(self, v, w):
-        steps = int(self.horizon / self.dt)
-        # self.get_logger().info(f"VW: {v} | {w}")
-        x, y, yaw = 0., 0., 0.
-
-        angles = self.last_scan.angle_min + np.arange(len(self.last_scan.ranges)) * self.last_scan.angle_increment
-        ranges = np.array(self.last_scan.ranges)
-        ranges[ranges < 0.19] = float('inf')
-
-        for _ in range(steps):
-            x += v * math.cos(yaw) * self.dt
-            y += v * math.sin(yaw) * self.dt
-            yaw += w * self.dt
-
-            px = ranges * np.cos(angles)
-            py = ranges * np.sin(angles)
-
-            d = np.sqrt((px - x)**2 + (py - y)**2)
-            if np.any(d < self.robot_radius):
-                return False
-        return True
-
     def set_scan(self, msg):
         self.last_scan = msg
         arr = np.array(msg.ranges)
@@ -171,6 +147,12 @@ class DynamicWindowPlanner(Node):
         arr = np.roll(arr, n // 2)
         self.last_scan.ranges = arr
         self.last_scan.angle_min = -np.pi
+
+        self.laser_ranges = np.array(self.last_scan.ranges)
+        self.laser_ranges[self.laser_ranges < 0.19] = float('inf')
+        self.laser_angles = self.last_scan.angle_min + np.arange(len(self.last_scan.ranges)) * self.last_scan.angle_increment
+        self.laser_x = self.laser_ranges * np.cos(self.laser_angles)
+        self.laser_y = self.laser_ranges * np.sin(self.laser_angles)
 
     def smooth_angle(self, current_angle, alpha=0.2):
         px, py = math.cos(self.goal_angle_rad), math.sin(self.goal_angle_rad)
@@ -182,6 +164,7 @@ class DynamicWindowPlanner(Node):
         return math.atan2(y, x)
 
     def set_target(self, msg):
+        # self.get_logger().info(f"Received Heading: {np.degrees(self.goal_angle_rad):.2f} deg {self.goal_angle_rad} rad target Depth: {self.goal_depth_m}")
         self.last_msg_time = time.time()
         # inverse goal direction angle.
         new_angle = -msg.angle_from_center_rad
